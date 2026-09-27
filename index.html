@@ -164,6 +164,12 @@ const LISTS = {
     explain: "Games that are at least 50% cheaper in the Argentine eShop than in the US eShop.",
     sort: ["saving", -1],
   },
+  br_us: {
+    label: "🇧🇷 Brazil vs 🇺🇸 US", file: "deals_BR_vs_US.csv", cheap: "BR", ref: "US",
+    cheapName: "Brazil", refName: "US",
+    explain: "Games that are at least 30% cheaper in the Brazilian eShop than in the US eShop.",
+    sort: ["saving", -1],
+  },
   us_jp: {
     label: "🇺🇸 US vs 🇯🇵 Japan", file: "deals_US_vs_JP.csv", cheap: "US", ref: "JP",
     cheapName: "US", refName: "Japan",
@@ -296,7 +302,7 @@ async function select(id) {
   state.list = id;
   [state.sortKey, state.sortDir] = LISTS[id].sort;
   state.shown = PAGE;
-  $("minOff").innerHTML = (id === "ar_us" ? [0, 60, 70, 80, 90] : [0, 25, 50, 75])
+  $("minOff").innerHTML = ({ ar_us: [0, 60, 70, 80, 90], br_us: [0, 40, 50, 60, 70] }[id] || [0, 25, 50, 75])
     .map(v => `<option value="${v}">${v ? v + "%+" : "Any"}</option>`).join("");
   renderTabs();
   try { await load(id); } catch { $("count").textContent = "Couldn't load prices. Try refreshing."; }

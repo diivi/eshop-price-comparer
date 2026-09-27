@@ -32,6 +32,9 @@ jobs:
       - name: AR vs US
         run: python3 eshop_compare.py --from AR --to US --min-discount-pct 50
 
+      - name: BR vs US
+        run: python3 eshop_compare.py --from BR --to US --min-discount-pct 30
+
       - name: US vs JP
         run: python3 eshop_compare.py --from US --to JP --where "saving > 0" --sort popularity
 
