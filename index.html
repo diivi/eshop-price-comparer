@@ -46,7 +46,7 @@ header p { margin: 0; color: var(--muted); max-width: 640px; }
 .explain { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
 
 .controls {
-  display: grid; gap: 12px; grid-template-columns: 2fr 1fr 1fr 1fr;
+  display: grid; gap: 12px; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;
 }
 .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -86,7 +86,7 @@ footer a { color: inherit; }
 @media (max-width: 760px) {
   header h1 { font-size: 22px; }
   .controls { grid-template-columns: 1fr 1fr; }
-  .controls .search { grid-column: 1 / -1; }
+  .controls .search, .controls .last { grid-column: 1 / -1; }
   table, tbody, tr, td { display: block; border: 0; }
   thead { display: none; }
   table { background: none; }
@@ -110,7 +110,7 @@ footer a { color: inherit; }
 <div class="wrap">
   <header>
     <h1>eShop Price Gaps</h1>
-    <p>Nintendo Switch games that cost much less in another country's eShop. All prices are converted to Indian rupees so you can compare them easily.</p>
+    <p>Nintendo Switch games that cost much less in another country's eShop.</p>
     <div class="updated" id="updated">Loading…</div>
   </header>
 
@@ -121,13 +121,19 @@ footer a { color: inherit; }
     <label class="search">Search games
       <input id="q" type="search" placeholder="e.g. Mario, Zelda, Hades" autocomplete="off">
     </label>
-    <label>Max price (₹)
+    <label>Currency
+      <select id="cur">
+        <option value="INR">₹ Indian rupee</option>
+        <option value="PHP">₱ Philippine peso</option>
+      </select>
+    </label>
+    <label><span id="maxLabel">Max price (₹)</span>
       <input id="maxPrice" type="number" inputmode="numeric" min="0" step="50" placeholder="Any">
     </label>
     <label>At least % off
       <select id="minOff"></select>
     </label>
-    <label>Console
+    <label class="last">Console
       <select id="plat">
         <option value="">All</option>
         <option value="Nintendo Switch">Switch</option>
@@ -155,7 +161,7 @@ const LISTS = {
   ar_us: {
     label: "🇦🇷 Argentina vs 🇺🇸 US", file: "deals_AR_vs_US.csv", cheap: "AR", ref: "US",
     cheapName: "Argentina", refName: "US",
-    explain: "Games that are at least 70% cheaper in the Argentine eShop than in the US eShop.",
+    explain: "Games that are at least 50% cheaper in the Argentine eShop than in the US eShop.",
     sort: ["saving", -1],
   },
   us_jp: {
@@ -166,7 +172,9 @@ const LISTS = {
   },
 };
 const PAGE = 100;
-const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+// CSVs are in INR; other currencies are converted here with today's rate
+const CURRENCIES = { INR: { sym: "₹", locale: "en-IN", rate: 1 }, PHP: { sym: "₱", locale: "en-PH", rate: null } };
+const money = n => { const c = CURRENCIES[state.cur]; return c.sym + Math.round(n * c.rate).toLocaleString(c.locale); };
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function parseCSV(text) {
@@ -192,7 +200,7 @@ function parseCSV(text) {
   return data.map(r => Object.fromEntries(h.map((k, i) => [k, r[i] ?? ""])));
 }
 
-const state = { list: "ar_us", data: {}, sortKey: null, sortDir: -1, shown: PAGE };
+const state = { cur: "INR", list: "ar_us", data: {}, sortKey: null, sortDir: -1, shown: PAGE };
 const $ = id => document.getElementById(id);
 
 const COLS = [
@@ -248,7 +256,7 @@ function filtered() {
   const plat = $("plat").value;
   const rows = (state.data[state.list] || []).filter(r =>
     (!q || r.title.toLowerCase().includes(q)) &&
-    (isNaN(max) || r.cheap <= max) &&
+    (isNaN(max) || r.cheap * CURRENCIES[state.cur].rate <= max) &&
     r.off >= minOff &&
     (!plat || r.plat === plat));
   const k = state.sortKey, d = state.sortDir;
@@ -271,11 +279,11 @@ function render() {
   $("body").innerHTML = rows.slice(0, state.shown).map(r => `
     <tr>
       <td class="c-title"><span class="title">${esc(r.title)}</span></td>
-      <td class="c-price num"><span class="mob">${L.cheapName}: </span><strong>${inr(r.cheap)}</strong>
-        <span class="mob strike">${inr(r.ref)}</span>
+      <td class="c-price num"><span class="mob">${L.cheapName}: </span><strong>${money(r.cheap)}</strong>
+        <span class="mob strike">${money(r.ref)}</span>
         <span class="sub">${esc(r.cheapLocal)}</span></td>
-      <td class="c-ref num">${inr(r.ref)}<span class="sub">${esc(r.refLocal)}</span></td>
-      <td class="c-save num"><span class="save">${inr(r.saving)}</span><span class="mob"> saved</span></td>
+      <td class="c-ref num">${money(r.ref)}<span class="sub">${esc(r.refLocal)}</span></td>
+      <td class="c-save num"><span class="save">${money(r.saving)}</span><span class="mob"> saved</span></td>
       <td class="c-off num"><span class="off">${Math.round(r.off)}% off</span></td>
       <td class="c-plat"><span class="chip${r.plat.endsWith("2") ? " ns2" : ""}">${r.plat.endsWith("2") ? "Switch 2" : "Switch"}</span></td>
       <td class="c-rank num">#${r.rank}</td>
@@ -288,7 +296,7 @@ async function select(id) {
   state.list = id;
   [state.sortKey, state.sortDir] = LISTS[id].sort;
   state.shown = PAGE;
-  $("minOff").innerHTML = (id === "ar_us" ? [0, 80, 90, 95] : [0, 25, 50, 75])
+  $("minOff").innerHTML = (id === "ar_us" ? [0, 60, 70, 80, 90] : [0, 25, 50, 75])
     .map(v => `<option value="${v}">${v ? v + "%+" : "Any"}</option>`).join("");
   renderTabs();
   try { await load(id); } catch { $("count").textContent = "Couldn't load prices. Try refreshing."; }
@@ -303,6 +311,23 @@ $("head").addEventListener("click", e => {
   else { state.sortKey = k; state.sortDir = (k === "title" || k === "plat" || k === "rank" || k === "cheap" || k === "ref") ? 1 : -1; }
   render();
 });
+function setCurrency(cur) {
+  if (!CURRENCIES[cur]?.rate) cur = "INR";
+  state.cur = cur;
+  $("cur").value = cur;
+  $("maxLabel").textContent = `Max price (${CURRENCIES[cur].sym})`;
+  try { localStorage.setItem("cur", cur); } catch {}
+  render();
+}
+$("cur").addEventListener("input", e => { $("maxPrice").value = ""; setCurrency(e.target.value); });
+fetch("https://open.er-api.com/v6/latest/INR")
+  .then(r => r.json())
+  .then(d => {
+    for (const k in CURRENCIES) if (k !== "INR") CURRENCIES[k].rate = d.rates[k];
+    let saved = null; try { saved = localStorage.getItem("cur"); } catch {}
+    if (saved) setCurrency(saved);
+  })
+  .catch(() => { $("cur").disabled = true; });
 for (const id of ["q", "maxPrice", "minOff", "plat"])
   $(id).addEventListener("input", () => { state.shown = PAGE; render(); });
 $("more").addEventListener("click", () => { state.shown += PAGE; render(); });

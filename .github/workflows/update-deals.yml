@@ -30,7 +30,7 @@ jobs:
           key: catalogs-${{ steps.week.outputs.week }}
 
       - name: AR vs US
-        run: python3 eshop_compare.py --from AR --to US --min-discount-pct 70
+        run: python3 eshop_compare.py --from AR --to US --min-discount-pct 50
 
       - name: US vs JP
         run: python3 eshop_compare.py --from US --to JP --where "saving > 0" --sort popularity
