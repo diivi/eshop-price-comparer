@@ -38,6 +38,9 @@ jobs:
       - name: US vs JP
         run: python3 eshop_compare.py --from US --to JP --where "saving > 0" --sort popularity
 
+      - name: JP vs US
+        run: python3 eshop_compare.py --from JP --to US --where "saving > 0" --sort popularity
+
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"

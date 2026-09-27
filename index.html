@@ -35,6 +35,7 @@ body {
 .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 16px 64px; }
 header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.02em; }
 header p { margin: 0; color: var(--muted); max-width: 640px; }
+.note { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 14px; }
 .updated { font-size: 13px; color: var(--muted); margin-top: 8px; }
 
 .tabs { display: flex; gap: 8px; margin: 24px 0 16px; flex-wrap: wrap; }
@@ -111,6 +112,7 @@ footer a { color: inherit; }
   <header>
     <h1>eShop Price Gaps</h1>
     <p>Nintendo Switch games that cost much less in another country's eShop.</p>
+    <p class="note">⚠️ Before buying, check the game's store page for supported languages; some regional versions don't include English.</p>
     <div class="updated" id="updated">Loading…</div>
   </header>
 
@@ -174,6 +176,12 @@ const LISTS = {
     label: "🇺🇸 US vs 🇯🇵 Japan", file: "deals_US_vs_JP.csv", cheap: "US", ref: "JP",
     cheapName: "US", refName: "Japan",
     explain: "Games that are cheaper in the US eShop than in the Japanese eShop.",
+    sort: ["rank", 1],
+  },
+  jp_us: {
+    label: "🇯🇵 Japan vs 🇺🇸 US", file: "deals_JP_vs_US.csv", cheap: "JP", ref: "US",
+    cheapName: "Japan", refName: "US",
+    explain: "Games that are cheaper in the Japanese eShop than in the US eShop.",
     sort: ["rank", 1],
   },
 };
