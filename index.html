@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eShop Price Gaps</title>
+<meta name="description" content="Nintendo Switch games that are much cheaper in another country's eShop, updated daily.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f6f4; --surface: #ffffff; --surface-2: #f0f0ed; --border: #e2e2dd;
+  --text: #1c1c1a; --muted: #6b6b66; --accent: #d6281f; --accent-soft: #fde8e6;
+  --good: #137a3c; --good-soft: #e3f4e9; --chip: #ecece8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131312; --surface: #1c1c1a; --surface-2: #242422; --border: #2f2f2c;
+    --text: #ededea; --muted: #9a9a94; --accent: #ff5a4f; --accent-soft: #3a1c1a;
+    --good: #5fd08a; --good-soft: #17301f; --chip: #2a2a27;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131312; --surface: #1c1c1a; --surface-2: #242422; --border: #2f2f2c;
+  --text: #ededea; --muted: #9a9a94; --accent: #ff5a4f; --accent-soft: #3a1c1a;
+  --good: #5fd08a; --good-soft: #17301f; --chip: #2a2a27;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.45 Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 28px 16px 64px; }
+header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.02em; }
+header p { margin: 0; color: var(--muted); max-width: 640px; }
+.updated { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+.tabs { display: flex; gap: 8px; margin: 24px 0 16px; flex-wrap: wrap; }
+.tab {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  padding: 10px 16px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.explain { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+
+.controls {
+  display: grid; gap: 12px; grid-template-columns: 2fr 1fr 1fr 1fr;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;
+}
+.controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.controls input, .controls select {
+  font: inherit; font-size: 15px; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; width: 100%;
+  text-transform: none; letter-spacing: 0;
+}
+.controls input:focus, .controls select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.count { font-size: 14px; color: var(--muted); margin: 14px 2px 10px; }
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+th {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+  background: var(--surface-2); cursor: pointer; user-select: none; white-space: nowrap;
+}
+th:hover { color: var(--text); }
+th .arrow { opacity: 0.35; margin-left: 4px; }
+th.sorted { color: var(--text); }
+th.sorted .arrow { opacity: 1; color: var(--accent); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--surface-2); }
+.title { font-weight: 600; }
+.sub { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; }
+.chip { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+.chip.ns2 { background: var(--accent-soft); color: var(--accent); }
+.off { display: inline-block; font-weight: 700; padding: 3px 9px; border-radius: 8px; background: var(--good-soft); color: var(--good); }
+.save { font-weight: 700; color: var(--good); }
+.strike { text-decoration: line-through; color: var(--muted); }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+.more { display: block; margin: 16px auto 0; }
+footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
+footer a { color: inherit; }
+
+@media (max-width: 760px) {
+  header h1 { font-size: 22px; }
+  .controls { grid-template-columns: 1fr 1fr; }
+  .controls .search { grid-column: 1 / -1; }
+  table, tbody, tr, td { display: block; border: 0; }
+  thead { display: none; }
+  table { background: none; }
+  tbody tr {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 10px;
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 12px;
+  }
+  tbody tr:hover { background: var(--surface); }
+  td { padding: 0; }
+  td.c-title { grid-column: 1 / -1; }
+  td.c-off { grid-column: 2; grid-row: 2 / span 2; align-self: center; text-align: right; }
+  td.c-price, td.c-save { grid-column: 1; text-align: left; }
+  td.c-ref, td.c-rank, td.c-plat { display: none; }
+  .mob { display: inline; }
+}
+@media (min-width: 761px) { .mob { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>eShop Price Gaps</h1>
+    <p>Nintendo Switch games that cost much less in another country's eShop. All prices are converted to Indian rupees so you can compare them easily.</p>
+    <div class="updated" id="updated">Loading…</div>
+  </header>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <p class="explain" id="explain"></p>
+
+  <div class="controls">
+    <label class="search">Search games
+      <input id="q" type="search" placeholder="e.g. Mario, Zelda, Hades" autocomplete="off">
+    </label>
+    <label>Max price (₹)
+      <input id="maxPrice" type="number" inputmode="numeric" min="0" step="50" placeholder="Any">
+    </label>
+    <label>At least % off
+      <select id="minOff"></select>
+    </label>
+    <label>Console
+      <select id="plat">
+        <option value="">All</option>
+        <option value="Nintendo Switch">Switch</option>
+        <option value="Nintendo Switch 2">Switch 2</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="count" id="count"></div>
+  <table>
+    <thead><tr id="head"></tr></thead>
+    <tbody id="body"></tbody>
+  </table>
+  <button class="tab more" id="more" hidden>Show more</button>
+
+  <footer>
+    Prices are the current eShop price (including sales) and change often. Check the store before buying.
+    Popularity is Nintendo's US store ranking (1 = most popular).
+    <a href="https://github.com/diivi/eshop-price-comparer">Source</a>
+  </footer>
+</div>
+
+<script>
+const LISTS = {
+  ar_us: {
+    label: "🇦🇷 Argentina vs 🇺🇸 US", file: "deals_AR_vs_US.csv", cheap: "AR", ref: "US",
+    cheapName: "Argentina", refName: "US",
+    explain: "Games that are at least 70% cheaper in the Argentine eShop than in the US eShop.",
+    sort: ["saving", -1],
+  },
+  us_jp: {
+    label: "🇺🇸 US vs 🇯🇵 Japan", file: "deals_US_vs_JP.csv", cheap: "US", ref: "JP",
+    cheapName: "US", refName: "Japan",
+    explain: "Games that are cheaper in the US eShop than in the Japanese eShop.",
+    sort: ["rank", 1],
+  },
+};
+const PAGE = 100;
+const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function parseCSV(text) {
+  text = text.replace(/^﻿/, "");
+  const rows = []; let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') q = false;
+      else field += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      if (row.length > 1 || row[0] !== "") rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  const [h, ...data] = rows;
+  return data.map(r => Object.fromEntries(h.map((k, i) => [k, r[i] ?? ""])));
+}
+
+const state = { list: "ar_us", data: {}, sortKey: null, sortDir: -1, shown: PAGE };
+const $ = id => document.getElementById(id);
+
+const COLS = [
+  { key: "title", label: "Game", cls: "c-title" },
+  { key: "cheap", label: "", cls: "c-price num" },
+  { key: "ref", label: "", cls: "c-ref num" },
+  { key: "saving", label: "You save", cls: "c-save num" },
+  { key: "off", label: "% off", cls: "c-off num" },
+  { key: "plat", label: "Console", cls: "c-plat" },
+  { key: "rank", label: "Popularity", cls: "c-rank num" },
+];
+
+async function load(id) {
+  if (state.data[id]) return state.data[id];
+  const L = LISTS[id];
+  const res = await fetch(L.file, { cache: "no-cache" });
+  const rows = parseCSV(await res.text()).map(r => ({
+    title: r.title.trim(),
+    cheap: +r[`${L.cheap}_INR`], cheapLocal: r[`${L.cheap}_price`],
+    ref: +r[`${L.ref}_INR`], refLocal: r[`${L.ref}_price`],
+    saving: +r.saving_INR, off: +r.discount_pct,
+    plat: r.platform, rank: +r.popularity_rank || 99999,
+  }));
+  // the catalogue can list a game twice under different popularity ranks; keep the best-ranked one
+  const seen = new Map();
+  for (const r of rows) {
+    const k = r.title + "|" + r.cheapLocal;
+    if (!seen.has(k) || seen.get(k).rank > r.rank) seen.set(k, r);
+  }
+  return (state.data[id] = [...seen.values()]);
+}
+
+function renderTabs() {
+  $("tabs").innerHTML = Object.entries(LISTS).map(([id, L]) =>
+    `<button class="tab" role="tab" data-id="${id}" aria-selected="${id === state.list}">${L.label}</button>`).join("");
+}
+
+function renderHead() {
+  const L = LISTS[state.list];
+  COLS[1].label = `${L.cheapName} price`;
+  COLS[2].label = `${L.refName} price`;
+  $("head").innerHTML = COLS.map(c => {
+    const on = state.sortKey === c.key;
+    const arrow = on ? (state.sortDir > 0 ? "▲" : "▼") : "↕";
+    return `<th class="${c.cls}${on ? " sorted" : ""}" data-key="${c.key}">${c.label}<span class="arrow">${arrow}</span></th>`;
+  }).join("");
+}
+
+function filtered() {
+  const q = $("q").value.trim().toLowerCase();
+  const max = parseFloat($("maxPrice").value);
+  const minOff = parseFloat($("minOff").value) || 0;
+  const plat = $("plat").value;
+  const rows = (state.data[state.list] || []).filter(r =>
+    (!q || r.title.toLowerCase().includes(q)) &&
+    (isNaN(max) || r.cheap <= max) &&
+    r.off >= minOff &&
+    (!plat || r.plat === plat));
+  const k = state.sortKey, d = state.sortDir;
+  return rows.sort((a, b) => k === "title" || k === "plat"
+    ? d * a[k].localeCompare(b[k]) : d * (a[k] - b[k]));
+}
+
+function render() {
+  const L = LISTS[state.list];
+  $("explain").textContent = L.explain;
+  renderHead();
+  const rows = filtered();
+  const total = (state.data[state.list] || []).length;
+  $("count").textContent = rows.length === total ? `${total} games` : `${rows.length} of ${total} games match`;
+  if (!rows.length) {
+    $("body").innerHTML = `<tr><td class="empty" colspan="7">No games match these filters.</td></tr>`;
+    $("more").hidden = true;
+    return;
+  }
+  $("body").innerHTML = rows.slice(0, state.shown).map(r => `
+    <tr>
+      <td class="c-title"><span class="title">${esc(r.title)}</span></td>
+      <td class="c-price num"><span class="mob">${L.cheapName}: </span><strong>${inr(r.cheap)}</strong>
+        <span class="mob strike">${inr(r.ref)}</span>
+        <span class="sub">${esc(r.cheapLocal)}</span></td>
+      <td class="c-ref num">${inr(r.ref)}<span class="sub">${esc(r.refLocal)}</span></td>
+      <td class="c-save num"><span class="save">${inr(r.saving)}</span><span class="mob"> saved</span></td>
+      <td class="c-off num"><span class="off">${Math.round(r.off)}% off</span></td>
+      <td class="c-plat"><span class="chip${r.plat.endsWith("2") ? " ns2" : ""}">${r.plat.endsWith("2") ? "Switch 2" : "Switch"}</span></td>
+      <td class="c-rank num">#${r.rank}</td>
+    </tr>`).join("");
+  $("more").hidden = rows.length <= state.shown;
+  $("more").textContent = `Show more (${rows.length - state.shown} left)`;
+}
+
+async function select(id) {
+  state.list = id;
+  [state.sortKey, state.sortDir] = LISTS[id].sort;
+  state.shown = PAGE;
+  $("minOff").innerHTML = (id === "ar_us" ? [0, 80, 90, 95] : [0, 25, 50, 75])
+    .map(v => `<option value="${v}">${v ? v + "%+" : "Any"}</option>`).join("");
+  renderTabs();
+  try { await load(id); } catch { $("count").textContent = "Couldn't load prices. Try refreshing."; }
+  render();
+}
+
+$("tabs").addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) select(b.dataset.id); });
+$("head").addEventListener("click", e => {
+  const th = e.target.closest("th"); if (!th) return;
+  const k = th.dataset.key;
+  if (state.sortKey === k) state.sortDir *= -1;
+  else { state.sortKey = k; state.sortDir = (k === "title" || k === "plat" || k === "rank" || k === "cheap" || k === "ref") ? 1 : -1; }
+  render();
+});
+for (const id of ["q", "maxPrice", "minOff", "plat"])
+  $(id).addEventListener("input", () => { state.shown = PAGE; render(); });
+$("more").addEventListener("click", () => { state.shown += PAGE; render(); });
+
+fetch("https://api.github.com/repos/diivi/eshop-price-comparer/commits?path=deals_AR_vs_US.csv&per_page=1")
+  .then(r => r.json())
+  .then(([c]) => {
+    const d = new Date(c.commit.committer.date);
+    $("updated").textContent = "Prices last updated " + d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) + ". Checked every day.";
+  })
+  .catch(() => { $("updated").textContent = "Prices are checked every day."; });
+
+select("ar_us");
+</script>
+</body>
+</html>

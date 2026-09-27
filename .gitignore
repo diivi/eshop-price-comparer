@@ -1,0 +1,7 @@
+eu_catalog.json
+jp_catalog.json
+.vscode/
+under*.csv
+curated*.csv
+__pycache__/
+*.sql
