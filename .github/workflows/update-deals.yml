@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # mark_new.py compares against yesterday's lists in history
 
       - uses: actions/setup-python@v5
         with:
@@ -41,11 +43,14 @@ jobs:
       - name: JP vs US
         run: python3 eshop_compare.py --from JP --to US --where "saving > 0" --sort popularity
 
+      - name: Mark new titles
+        run: python3 mark_new.py
+
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
-          git add deals_*.csv
+          git add deals_*.csv new.json
           git diff --cached --quiet && { echo "no changes"; exit 0; }
           git commit -m "Update deals $(date -u +%F)"
           git push

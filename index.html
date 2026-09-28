@@ -79,6 +79,13 @@ tbody tr:hover { background: var(--surface-2); }
 .off { display: inline-block; font-weight: 700; padding: 3px 9px; border-radius: 8px; background: var(--good-soft); color: var(--good); }
 .save { font-weight: 700; color: var(--good); }
 .strike { text-decoration: line-through; color: var(--muted); }
+.chip.new { background: var(--good-soft); color: var(--good); font-weight: 700; margin-left: 6px; vertical-align: 2px; }
+.tab .badge { font-size: 12px; font-weight: 700; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--good-soft); color: var(--good); }
+.countrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 14px 2px 10px; }
+.countrow .count { margin: 0; }
+.newbtn { border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.newbtn[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
+.newbtn:disabled { opacity: 0.5; cursor: default; }
 .empty { padding: 40px; text-align: center; color: var(--muted); }
 .more { display: block; margin: 16px auto 0; }
 [hidden] { display: none !important; }
@@ -145,7 +152,10 @@ footer a { color: inherit; }
     </label>
   </div>
 
-  <div class="count" id="count"></div>
+  <div class="countrow">
+    <div class="count" id="count"></div>
+    <button class="newbtn" id="newOnly" aria-pressed="false">✨ New today only</button>
+  </div>
   <table>
     <thead><tr id="head"></tr></thead>
     <tbody id="body"></tbody>
@@ -215,7 +225,7 @@ function parseCSV(text) {
   return data.map(r => Object.fromEntries(h.map((k, i) => [k, r[i] ?? ""])));
 }
 
-const state = { cur: "INR", list: "ar_us", data: {}, sortKey: null, sortDir: -1, shown: PAGE };
+const state = { newOnly: false, newIds: {}, cur: "INR", list: "ar_us", data: {}, sortKey: null, sortDir: -1, shown: PAGE };
 const $ = id => document.getElementById(id);
 
 const COLS = [
@@ -238,6 +248,7 @@ async function load(id) {
     ref: +r[`${L.ref}_INR`], refLocal: r[`${L.ref}_price`],
     saving: +r.saving_INR, off: +r.discount_pct,
     plat: r.platform, rank: +r.popularity_rank || 99999,
+    isNew: (state.newIds[L.file] || new Set()).has(r[`${L.cheap}_nsuid`]),
   }));
   // the catalogue can list a game twice under different popularity ranks; keep the best-ranked one
   const seen = new Map();
@@ -249,8 +260,10 @@ async function load(id) {
 }
 
 function renderTabs() {
-  $("tabs").innerHTML = Object.entries(LISTS).map(([id, L]) =>
-    `<button class="tab" role="tab" data-id="${id}" aria-selected="${id === state.list}">${L.label}</button>`).join("");
+  $("tabs").innerHTML = Object.entries(LISTS).map(([id, L]) => {
+    const n = (state.newIds[L.file] || new Set()).size;
+    return `<button class="tab" role="tab" data-id="${id}" aria-selected="${id === state.list}">${L.label}${n ? `<span class="badge">${n} new</span>` : ""}</button>`;
+  }).join("");
 }
 
 function renderHead() {
@@ -273,7 +286,8 @@ function filtered() {
     (!q || r.title.toLowerCase().includes(q)) &&
     (isNaN(max) || r.cheap * CURRENCIES[state.cur].rate <= max) &&
     r.off >= minOff &&
-    (!plat || r.plat === plat));
+    (!plat || r.plat === plat) &&
+    (!state.newOnly || r.isNew));
   const k = state.sortKey, d = state.sortDir;
   return rows.sort((a, b) => k === "title" || k === "plat"
     ? d * a[k].localeCompare(b[k]) : d * (a[k] - b[k]));
@@ -286,14 +300,18 @@ function render() {
   const rows = filtered();
   const total = (state.data[state.list] || []).length;
   $("count").textContent = rows.length === total ? `${total} games` : `${rows.length} of ${total} games match`;
+  const newCount = (state.data[state.list] || []).filter(r => r.isNew).length;
+  $("newOnly").textContent = `✨ New today only (${newCount})`;
+  $("newOnly").setAttribute("aria-pressed", state.newOnly);
+  $("newOnly").disabled = !newCount && !state.newOnly;
   if (!rows.length) {
-    $("body").innerHTML = `<tr><td class="empty" colspan="7">No games match these filters.</td></tr>`;
+    $("body").innerHTML = `<tr><td class="empty" colspan="7">${state.newOnly ? "No new games in this list since yesterday." : "No games match these filters."}</td></tr>`;
     $("more").hidden = true;
     return;
   }
   $("body").innerHTML = rows.slice(0, state.shown).map(r => `
     <tr>
-      <td class="c-title"><span class="title">${esc(r.title)}</span></td>
+      <td class="c-title"><span class="title">${esc(r.title)}</span>${r.isNew ? `<span class="chip new">New!</span>` : ""}</td>
       <td class="c-price num"><span class="mob">${L.cheapName}: </span><strong>${money(r.cheap)}</strong>
         <span class="mob strike">${money(r.ref)}</span>
         <span class="sub">${esc(r.cheapLocal)}</span></td>
@@ -345,6 +363,7 @@ fetch("https://open.er-api.com/v6/latest/INR")
   .catch(() => { $("cur").disabled = true; });
 for (const id of ["q", "maxPrice", "minOff", "plat"])
   $(id).addEventListener("input", () => { state.shown = PAGE; render(); });
+$("newOnly").addEventListener("click", () => { state.newOnly = !state.newOnly; state.shown = PAGE; render(); });
 $("more").addEventListener("click", () => { state.shown += PAGE; render(); });
 
 fetch("https://api.github.com/repos/diivi/eshop-price-comparer/commits?path=deals_AR_vs_US.csv&per_page=1")
@@ -355,7 +374,12 @@ fetch("https://api.github.com/repos/diivi/eshop-price-comparer/commits?path=deal
   })
   .catch(() => { $("updated").textContent = "Prices are checked every day."; });
 
-select("ar_us");
+// titles added since yesterday's run; the page still works without it
+fetch("new.json", { cache: "no-cache" })
+  .then(r => r.json())
+  .then(d => { for (const f in d) state.newIds[f] = new Set(d[f].nsuids); })
+  .catch(() => {})
+  .finally(() => select("ar_us"));
 </script>
 </body>
 </html>
